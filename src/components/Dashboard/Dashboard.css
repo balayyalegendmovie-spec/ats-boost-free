@@ -1,0 +1,22 @@
+/* Dashboard styles */
+
+.dashboard {
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  margin-bottom: 30px;
+}
+
+.dashboard-content {
+  display: grid;
+  gap: 20px;
+}
+
+.dashboard-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
