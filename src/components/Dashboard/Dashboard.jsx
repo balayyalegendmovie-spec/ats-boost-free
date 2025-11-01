@@ -162,7 +162,7 @@ const Dashboard = () => {
             <div className="card-body">
               <div className="stack gap-md">
                 {/* Resume uploader (reuse Upload component for alignment with main branch) */}
-                <Upload label="Resume" onFileSelected={onResumeFile} fileName={resumeData?.fileName} />
+                <Upload label="Resume" fileName={resumeData?.fileName} onFileSelected={onResumeFile} />
 
                 {/* JD Input: always show textarea with file/text toggle */}
                 <div className="jd-input">
@@ -183,6 +183,7 @@ const Dashboard = () => {
                       >File</button>
                     </div>
                   </div>
+
                   {/* Textarea always visible */}
                   <textarea
                     className="textarea jd-textarea"
@@ -191,17 +192,18 @@ const Dashboard = () => {
                     onChange={(e) => onJDText(e.target.value)}
                     rows={8}
                   />
+
                   {/* Optional file if in file mode */}
                   {jobDescriptionData.mode === 'file' && (
                     <div className="file-inline">
-                      <Upload compact label="JD File" onFileSelected={onJDFile} fileName={jobDescriptionData?.fileName} />
+                      <Upload compact label="JD File" fileName={jobDescriptionData?.fileName} onFileSelected={onJDFile} />
                     </div>
                   )}
                 </div>
               </div>
             </div>
             <div className="card-footer">
-              <button className="btn btn-primary" onClick={startAnalysis} disabled={!canAnalyze || loading}>
+              <button className="btn btn-primary" disabled={!canAnalyze || loading} onClick={startAnalysis}>
                 {loading ? 'Preparing…' : 'Analyze'}
               </button>
             </div>
