@@ -7,7 +7,7 @@ import './App.css';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
-
+  
   if (loading) {
     return (
       <div className="loading-screen">
@@ -16,13 +16,13 @@ const ProtectedRoute = ({ children }) => {
       </div>
     );
   }
-
+  
   return user ? children : <Navigate to="/login" replace />;
 };
 
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
-
+  
   if (loading) {
     return (
       <div className="loading-screen">
@@ -31,7 +31,7 @@ const PublicRoute = ({ children }) => {
       </div>
     );
   }
-
+  
   return user ? <Navigate to="/dashboard" replace /> : children;
 };
 
@@ -40,23 +40,25 @@ function AppContent() {
     <Router>
       <div className="app">
         <Routes>
-          <Route
-            path="/login"
+          <Route 
+            path="/login" 
             element={
               <PublicRoute>
                 <LoginForm />
               </PublicRoute>
-            }
+            } 
           />
-          <Route
-            path="/dashboard"
+          <Route 
+            path="/dashboard" 
             element={
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
-            }
+            } 
           />
           <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Catch-all route: redirect any unknown routes to home/login */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
     </Router>
