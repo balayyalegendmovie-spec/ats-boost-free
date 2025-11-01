@@ -4,13 +4,14 @@ import Upload from '../Upload/Upload';
 import Analysis from '../Analysis/Analysis';
 import './Dashboard.css';
 
-// helper to read files safely
-const readFile = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(reader.result?.toString() || '');
-  reader.onerror = reject;
-  reader.readAsText(file);
-});
+// Utility: safe file reader
+const readFile = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result?.toString() || '');
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
 
 const STORAGE_KEYS = {
   resume: 'ats-resume',
@@ -20,244 +21,250 @@ const STORAGE_KEYS = {
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
-  const [resumeData, setResumeData] = useState(null); // {fileName, text}
-  const [jobDescriptionData, setJobDescriptionData] = useState(null); // {fileName, text}
-  const [currentView, setCurrentView] = useState('upload');
+
+  // Data state
+  const [resumeData, setResumeData] = useState(null); // { fileName, text }
+  const [jobDescriptionData, setJobDescriptionData] = useState({ mode: 'text', text: '', fileName: '' });
+  const [currentView, setCurrentView] = useState('upload'); // upload | analysis | history
   const [history, setHistory] = useState([]);
+
+  // UI state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [analysisResult, setAnalysisResult] = useState(null);
+  const [success, setSuccess] = useState(null);
 
-  // Restore from storage on mount
+  // Restore from storage
   useEffect(() => {
     try {
       const savedHistory = localStorage.getItem(STORAGE_KEYS.history);
       if (savedHistory) setHistory(JSON.parse(savedHistory));
+      const savedResume = localStorage.getItem(STORAGE_KEYS.resume);
+      if (savedResume) setResumeData(JSON.parse(savedResume));
+      const savedJd = localStorage.getItem(STORAGE_KEYS.jd);
+      if (savedJd) setJobDescriptionData(JSON.parse(savedJd));
     } catch (err) {
-      console.warn('Could not load history', err);
+      console.error('Failed to parse saved data', err);
     }
   }, []);
 
-  // Save history on change
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(history));
-    } catch (err) {
-      console.warn('Could not save history', err);
-    }
+    localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(history));
   }, [history]);
 
-  const handleResumeUpload = async (file) => {
+  useEffect(() => {
+    if (resumeData) localStorage.setItem(STORAGE_KEYS.resume, JSON.stringify(resumeData));
+  }, [resumeData]);
+
+  useEffect(() => {
+    if (jobDescriptionData) localStorage.setItem(STORAGE_KEYS.jd, JSON.stringify(jobDescriptionData));
+  }, [jobDescriptionData]);
+
+  // Derived flags
+  const canAnalyze = useMemo(() => !!(resumeData?.text && jobDescriptionData?.text), [resumeData, jobDescriptionData]);
+
+  // Handlers: Resume
+  const onResumeFile = async (file) => {
+    if (!file) return;
+    setError(null);
+    setLoading(true);
     try {
-      setError(null);
-      setLoading(true);
       const text = await readFile(file);
-      const newData = { fileName: file.name, text };
-      setResumeData(newData);
-      // also save to localStorage for convenience
-      try {
-        localStorage.setItem(STORAGE_KEYS.resume, JSON.stringify(newData));
-      } catch (e) {
-        console.warn('Could not cache resume', e);
-      }
-    } catch (err) {
-      setError('Failed to read resume file: ' + err.message);
+      setResumeData({ fileName: file.name, text });
+      setSuccess('Resume loaded successfully');
+    } catch (e) {
+      setError('Failed to read resume file');
     } finally {
       setLoading(false);
     }
   };
 
-  // Updated to handle both File objects and text strings
-  const handleJobDescriptionUpload = async (fileOrText) => {
+  // Handlers: JD (toggle text/file but always show textarea)
+  const onJDFile = async (file) => {
+    if (!file) return;
+    setError(null);
+    setLoading(true);
     try {
-      setError(null);
-      setLoading(true);
-      
-      let text;
-      let fileName;
-      
-      // Check if input is a string (direct text input) or a File object
-      if (typeof fileOrText === 'string') {
-        // Direct text input from textarea
-        text = fileOrText;
-        fileName = 'Job Description (Text Input)';
-      } else if (fileOrText instanceof File) {
-        // File upload
-        text = await readFile(fileOrText);
-        fileName = fileOrText.name;
-      } else {
-        throw new Error('Invalid input: expected File or string');
-      }
-      
-      const newData = { fileName, text };
-      setJobDescriptionData(newData);
-      
-      // Save to localStorage for convenience
-      try {
-        localStorage.setItem(STORAGE_KEYS.jd, JSON.stringify(newData));
-      } catch (e) {
-        console.warn('Could not cache job description', e);
-      }
-    } catch (err) {
-      setError('Failed to process job description: ' + err.message);
+      const text = await readFile(file);
+      setJobDescriptionData({ mode: 'file', fileName: file.name, text });
+      setSuccess('Job description loaded from file');
+    } catch (e) {
+      setError('Failed to read job description file');
     } finally {
       setLoading(false);
     }
   };
 
-  const mockAnalysisEngine = (resumeText, jdText) => {
-    // simplified score: measure keyword match as a percentage
-    const jdWords = jdText.toLowerCase().match(/\w+/g) || [];
-    const resumeWords = new Set(
-      resumeText.toLowerCase().match(/\w+/g) || []
-    );
-    const commonWords = jdWords.filter(w => resumeWords.has(w));
-    const coverage = Math.round((commonWords.length / jdWords.length) * 100) || 0;
-    const score = Math.min(coverage, 100);
-    const requiredKeywords = ['experience', 'skills', 'education'];
-    const optionalKeywords = ['leadership', 'communication', 'teamwork'];
-    const matchedKeywords = [
-      ...new Set(
-        jdWords.filter(w => resumeWords.has(w) && w.length > 3).slice(0, 10)
-      ),
-    ];
-    const missingKeywords = jdWords
-      .filter(w => !resumeWords.has(w) && w.length > 4)
-      .slice(0, 8);
-    const insights = [
-      score < 50 ? 'Consider adding more relevant keywords from the job description.' : 'Good keyword match!',
-      'Tailor your resume to highlight specific experiences mentioned in the JD.',
-    ];
-    const sectionScores = {
-      skills: Math.min(score + 10, 100),
-      experience: Math.max(score - 5, 0),
-      education: score,
-    };
-    const experienceMatch = score > 60 ? 'Strong' : score > 40 ? 'Moderate' : 'Weak';
-
-    return {
-      score,
-      coverage,
-      matchedKeywords,
-      missingKeywords,
-      insights,
-      requiredKeywords,
-      optionalKeywords,
-      sectionScores,
-      experienceMatch,
-    };
+  const onJDText = (text) => {
+    setJobDescriptionData((prev) => ({ ...prev, mode: 'text', text }));
   };
 
-  const handleAnalyze = () => {
-    if (!resumeData || !jobDescriptionData) {
-      setError('Please upload both a resume and a job description before analyzing.');
+  // Analysis trigger (delegates to Analysis component alignment)
+  const startAnalysis = () => {
+    if (!canAnalyze) {
+      setError('Please provide both resume and job description.');
       return;
     }
-    setLoading(true);
     setError(null);
-    // simulate async call
-    setTimeout(() => {
-      const result = mockAnalysisEngine(resumeData.text, jobDescriptionData.text);
-      setAnalysisResult(result);
-      setCurrentView('analysis');
-      // add to history
-      const newEntry = {
-        id: Date.now(),
-        date: new Date().toISOString(),
-        resumeFile: resumeData.fileName,
-        jdFile: jobDescriptionData.fileName,
-        score: result.score,
-        coverage: result.coverage,
-      };
-      setHistory(prev => [newEntry, ...prev].slice(0, 10));
-      setLoading(false);
-    }, 800);
+    setSuccess(null);
+    setCurrentView('analysis');
   };
 
-  const goBackToUpload = () => {
-    setCurrentView('upload');
-    setAnalysisResult(null);
+  // Add to history
+  const pushHistory = (entry) => {
+    const item = { id: Date.now(), ...entry };
+    setHistory((h) => [item, ...h].slice(0, 20));
   };
 
-  const clearAll = () => {
-    setResumeData(null);
-    setJobDescriptionData(null);
-    setAnalysisResult(null);
-    setError(null);
-    setCurrentView('upload');
-    try {
-      localStorage.removeItem(STORAGE_KEYS.resume);
-      localStorage.removeItem(STORAGE_KEYS.jd);
-    } catch (e) {
-      console.warn('Could not clear storage', e);
-    }
-  };
+  // Reset feedback after a while
+  useEffect(() => {
+    if (!error && !success) return;
+    const t = setTimeout(() => {
+      setError(null);
+      setSuccess(null);
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [error, success]);
 
-  const canAnalyze = useMemo(
-    () => !loading && resumeData && jobDescriptionData,
-    [loading, resumeData, jobDescriptionData]
-  );
-
+  // Visual: Modern background classes are in Dashboard.css to keep JSX clean
   return (
-    <div className="dashboard">
-      {currentView === 'analysis' && analysisResult ? (
-        <Analysis
-          loading={false}
-          result={analysisResult}
-          resumeText={resumeData?.text || ''}
-          jdText={jobDescriptionData?.text || ''}
-          error={error}
-          onBack={goBackToUpload}
-        />
-      ) : (
-        <div className="dashboard-container">
-          <header className="dashboard__header">
-            <h1>ATS Resume Analyzer</h1>
-            <div className="dashboard__user">
-              <span>Welcome, {user?.email || 'User'}</span>
-              <button className="btn btn--logout" onClick={logout}>
-                Sign Out
+    <div className="dashboard-root">
+      <div className="dashboard-bg" />
+
+      <header className="dashboard-header">
+        <div className="brand">
+          <span className="brand-dot" />
+          <h1>ATS Boost</h1>
+        </div>
+        <div className="header-actions">
+          <span className="user-chip" title={user?.email || 'Guest'}>
+            {user?.email ? user.email : 'Guest'}
+          </span>
+          <button className="btn btn-ghost" onClick={logout}>Logout</button>
+        </div>
+      </header>
+
+      {/* Feedback toasts */}
+      <div className="toast-wrap" aria-live="polite" aria-atomic="true">
+        {error && <div className="toast toast-error" role="alert">{error}</div>}
+        {success && <div className="toast toast-success" role="status">{success}</div>}
+      </div>
+
+      <main className="dashboard-content">
+        {/* Cards grid */}
+        <section className="cards-grid">
+          {/* Upload Card */}
+          <article className="card">
+            <div className="card-header">
+              <h2>Upload</h2>
+              <p className="sub">Add your resume and job description</p>
+            </div>
+            <div className="card-body">
+              <div className="stack gap-md">
+                {/* Resume uploader (reuse Upload component for alignment with main branch) */}
+                <Upload onFileSelected={onResumeFile} label="Resume" fileName={resumeData?.fileName} />
+
+                {/* JD Input: always show textarea with file/text toggle */}
+                <div className="jd-input">
+                  <div className="row space between">
+                    <label className="label">Job Description</label>
+                    <div className="segmented">
+                      <button
+                        className={jobDescriptionData.mode === 'text' ? 'seg active' : 'seg'}
+                        onClick={() => setJobDescriptionData((p) => ({ ...p, mode: 'text' }))}
+                        type="button"
+                        aria-pressed={jobDescriptionData.mode === 'text'}
+                      >Text</button>
+                      <button
+                        className={jobDescriptionData.mode === 'file' ? 'seg active' : 'seg'}
+                        onClick={() => setJobDescriptionData((p) => ({ ...p, mode: 'file' }))}
+                        type="button"
+                        aria-pressed={jobDescriptionData.mode === 'file'}
+                      >File</button>
+                    </div>
+                  </div>
+
+                  {/* Textarea always visible */}
+                  <textarea
+                    className="textarea jd-textarea"
+                    placeholder="Paste or type the job description here..."
+                    value={jobDescriptionData.text}
+                    onChange={(e) => onJDText(e.target.value)}
+                    rows={8}
+                  />
+
+                  {/* Optional file if in file mode */}
+                  {jobDescriptionData.mode === 'file' && (
+                    <div className="file-inline">
+                      <Upload onFileSelected={onJDFile} label="JD File" fileName={jobDescriptionData?.fileName} compact />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="card-footer">
+              <button className="btn btn-primary" disabled={!canAnalyze || loading} onClick={startAnalysis}>
+                {loading ? 'Preparing…' : 'Analyze'}
               </button>
             </div>
-          </header>
-          {error && <div className="error-banner">{error}</div>}
-          <Upload
-            onResumeUpload={handleResumeUpload}
-            onJobDescriptionUpload={handleJobDescriptionUpload}
-            resumeFileName={resumeData?.fileName}
-            jdFileName={jobDescriptionData?.fileName}
-            invalidFeedback={setError}
-          />
-          <div className="dashboard__actions">
-            <button className="btn btn--primary" onClick={handleAnalyze} disabled={!canAnalyze}>
-              Analyze Resume
-            </button>
-            <button className="btn btn--secondary" onClick={clearAll} disabled={loading}>
-              Reset
-            </button>
-          </div>
-          {loading && (
-            <div className="progress">
-              <div className="spinner" aria-label="Loading" />
-              <div className="bar"><div className="bar__fill" /></div>
+          </article>
+
+          {/* Analysis Card */}
+          <article className="card">
+            <div className="card-header">
+              <h2>Analysis</h2>
+              <p className="sub">Match score, gaps, and suggestions</p>
             </div>
-          )}
-          {!!history.length && (
-            <div className="history">
-              <h3>Analysis History</h3>
-              <ul>
-                {history.map(h => (
-                  <li key={h.id}>
-                    <span>{new Date(h.date).toLocaleString()}</span>
-                    <span>Score: {h.score}% (Coverage {h.coverage}%)</span>
-                    <span>{h.resumeFile} vs {h.jdFile}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="card-body analysis-area">
+              {currentView === 'analysis' && canAnalyze ? (
+                <Analysis
+                  resumeText={resumeData.text}
+                  jdText={jobDescriptionData.text}
+                  onComplete={(result) => {
+                    setSuccess('Analysis completed');
+                    pushHistory({ type: 'analysis', date: new Date().toISOString(), resume: resumeData?.fileName, jd: jobDescriptionData?.fileName || 'Text', resultSummary: result?.summary || '' });
+                  }}
+                  onError={(msg) => setError(msg || 'Analysis failed')}
+                />
+              ) : (
+                <div className="placeholder">
+                  <p>Run an analysis to see results here.</p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      )}
+          </article>
+
+          {/* History Card */}
+          <article className="card">
+            <div className="card-header">
+              <h2>History</h2>
+              <p className="sub">Recent analyses</p>
+            </div>
+            <div className="card-body">
+              {history.length === 0 ? (
+                <div className="placeholder">
+                  <p>No history yet. Your latest analyses will appear here.</p>
+                </div>
+              ) : (
+                <ul className="history-list">
+                  {history.map((h) => (
+                    <li key={h.id} className="history-item">
+                      <div className="history-meta">
+                        <span className="badge">{new Date(h.date).toLocaleString()}</span>
+                        <span className="muted">{h.resume} • {h.jd}</span>
+                      </div>
+                      <div className="history-summary">{h.resultSummary || '—'}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </article>
+        </section>
+      </main>
+
+      <footer className="dashboard-footer">
+        <p className="muted">Pro tip: You can paste JD text directly or switch to file mode.</p>
+      </footer>
     </div>
   );
 };
