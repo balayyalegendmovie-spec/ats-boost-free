@@ -38,8 +38,10 @@ const Dashboard = () => {
     try {
       const savedHistory = localStorage.getItem(STORAGE_KEYS.history);
       if (savedHistory) setHistory(JSON.parse(savedHistory));
+
       const savedResume = localStorage.getItem(STORAGE_KEYS.resume);
       if (savedResume) setResumeData(JSON.parse(savedResume));
+
       const savedJd = localStorage.getItem(STORAGE_KEYS.jd);
       if (savedJd) setJobDescriptionData(JSON.parse(savedJd));
     } catch (err) {
@@ -128,15 +130,14 @@ const Dashboard = () => {
   // Visual: Modern background classes are in Dashboard.css to keep JSX clean
   return (
     <div className="dashboard-root">
-      <div className="dashboard-bg" />
-
+      <div className="dashboard-bg"></div>
       <header className="dashboard-header">
         <div className="brand">
-          <span className="brand-dot" />
-          <h1>ATS Boost</h1>
+          <span className="brand-dot"></span>
+          ATS Boost
         </div>
         <div className="header-actions">
-          <span className="user-chip" title={user?.email || 'Guest'}>
+          <span className="user-chip" title={user?.email}>
             {user?.email ? user.email : 'Guest'}
           </span>
           <button className="btn btn-ghost" onClick={logout}>Logout</button>
@@ -155,13 +156,13 @@ const Dashboard = () => {
           {/* Upload Card */}
           <article className="card">
             <div className="card-header">
-              <h2>Upload</h2>
+              Upload
               <p className="sub">Add your resume and job description</p>
             </div>
             <div className="card-body">
               <div className="stack gap-md">
                 {/* Resume uploader (reuse Upload component for alignment with main branch) */}
-                <Upload onFileSelected={onResumeFile} label="Resume" fileName={resumeData?.fileName} />
+                <Upload label="Resume" onFileSelected={onResumeFile} fileName={resumeData?.fileName} />
 
                 {/* JD Input: always show textarea with file/text toggle */}
                 <div className="jd-input">
@@ -182,7 +183,6 @@ const Dashboard = () => {
                       >File</button>
                     </div>
                   </div>
-
                   {/* Textarea always visible */}
                   <textarea
                     className="textarea jd-textarea"
@@ -191,18 +191,17 @@ const Dashboard = () => {
                     onChange={(e) => onJDText(e.target.value)}
                     rows={8}
                   />
-
                   {/* Optional file if in file mode */}
                   {jobDescriptionData.mode === 'file' && (
                     <div className="file-inline">
-                      <Upload onFileSelected={onJDFile} label="JD File" fileName={jobDescriptionData?.fileName} compact />
+                      <Upload compact label="JD File" onFileSelected={onJDFile} fileName={jobDescriptionData?.fileName} />
                     </div>
                   )}
                 </div>
               </div>
             </div>
             <div className="card-footer">
-              <button className="btn btn-primary" disabled={!canAnalyze || loading} onClick={startAnalysis}>
+              <button className="btn btn-primary" onClick={startAnalysis} disabled={!canAnalyze || loading}>
                 {loading ? 'Preparing…' : 'Analyze'}
               </button>
             </div>
@@ -211,7 +210,7 @@ const Dashboard = () => {
           {/* Analysis Card */}
           <article className="card">
             <div className="card-header">
-              <h2>Analysis</h2>
+              Analysis
               <p className="sub">Match score, gaps, and suggestions</p>
             </div>
             <div className="card-body analysis-area">
@@ -227,7 +226,7 @@ const Dashboard = () => {
                 />
               ) : (
                 <div className="placeholder">
-                  <p>Run an analysis to see results here.</p>
+                  Run an analysis to see results here.
                 </div>
               )}
             </div>
@@ -236,13 +235,13 @@ const Dashboard = () => {
           {/* History Card */}
           <article className="card">
             <div className="card-header">
-              <h2>History</h2>
+              History
               <p className="sub">Recent analyses</p>
             </div>
             <div className="card-body">
               {history.length === 0 ? (
                 <div className="placeholder">
-                  <p>No history yet. Your latest analyses will appear here.</p>
+                  No history yet. Your latest analyses will appear here.
                 </div>
               ) : (
                 <ul className="history-list">
