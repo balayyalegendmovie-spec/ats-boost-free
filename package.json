@@ -9,8 +9,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "compromise": "^14.14.4",
+    "docx": "^9.5.1",
+    "file-saver": "^2.0.5",
+    "firebase": "^12.5.0",
+    "jspdf": "^3.0.3",
+    "lucide-react": "^0.552.0",
+    "mammoth": "^1.11.0",
+    "natural": "^8.1.0",
+    "pdf-parse": "^2.4.5",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^7.9.5"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.0.0",
