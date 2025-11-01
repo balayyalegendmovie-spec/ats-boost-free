@@ -1,0 +1,39 @@
+/* Upload styles */
+
+.upload {
+  padding: 40px;
+}
+
+.upload-container {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.upload-area {
+  border: 2px dashed #3b82f6;
+  border-radius: 8px;
+  padding: 60px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+  background: #e0f2fe;
+  border-color: #2563eb;
+}
+
+.upload-button {
+  margin-top: 20px;
+  padding: 12px 24px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.upload-button:hover {
+  background: #2563eb;
+}
