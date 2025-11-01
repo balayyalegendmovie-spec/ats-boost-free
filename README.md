@@ -4,21 +4,38 @@
 
 ### Setting up API Keys
 
-This project uses HuggingFace API for AI-powered features. To configure the API key:
+⚠️ **IMPORTANT SECURITY NOTICE** ⚠️
 
-1. **For Local Development:**
-   - Copy `.env.example` to `.env`
-   - Replace the placeholder value in `.env` with your actual HuggingFace API key
+The HuggingFace API key (`VITE_HUGGINGFACE_API_KEY`) should **NEVER** be shared publicly or committed to version control with real values.
 
-2. **For Production/CI/CD:**
-   - **DO NOT** commit real API keys to the repository
-   - Use GitHub repository secrets to store the real API key:
-     - Go to your repository Settings > Secrets and variables > Actions
-     - Add a new secret named `VITE_HUGGINGFACE_API_KEY`
-     - The secret will be available in GitHub Actions workflows
-   - Reference the secret in your deployment configuration
+#### For Local Development:
 
-3. **Security Best Practices:**
-   - Never commit `.env` files containing real credentials
-   - Always use environment variables or secrets management for sensitive data
-   - Rotate API keys regularly and revoke any accidentally exposed keys
+1. Copy `.env.example` to `.env`
+2. Replace the placeholder value in `.env` with your actual HuggingFace API key
+3. Ensure `.env` is in your `.gitignore` (it should be by default)
+
+#### For Production/CI/CD (GitHub Actions):
+
+**Step-by-Step Instructions to Secure Your API Key:**
+
+1. Go to your GitHub repository page
+2. Click on **Settings** tab
+3. Navigate to **Secrets and variables** > **Actions**
+4. Click **New repository secret** button
+5. Enter the following:
+   - **Name:** `VITE_HUGGINGFACE_API_KEY`
+   - **Value:** Paste your actual HuggingFace API token
+6. Click **Save**
+
+Your secret will now be available in GitHub Actions workflows without exposing it in your code.
+
+#### Security Best Practices:
+
+- ✅ **DO:** Use `.env.example` with placeholder values only
+- ✅ **DO:** Store real API keys in GitHub Secrets for CI/CD
+- ✅ **DO:** Keep your `.env` file in `.gitignore`
+- ❌ **DON'T:** Commit real API keys to the repository
+- ❌ **DON'T:** Share API keys in public forums or documentation
+- ❌ **DON'T:** Use real secrets in `.env.example`
+
+**Note:** If you accidentally commit an API key, revoke it immediately and generate a new one.
