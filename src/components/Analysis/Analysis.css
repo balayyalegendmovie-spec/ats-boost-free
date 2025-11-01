@@ -1,0 +1,28 @@
+/* Analysis styles */
+
+.analysis {
+  padding: 40px;
+}
+
+.analysis-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.analysis-header {
+  margin-bottom: 30px;
+}
+
+.analysis-content {
+  background: white;
+  border-radius: 8px;
+  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.analysis-result {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 4px;
+}
